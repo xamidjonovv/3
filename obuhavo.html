@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="site-verification" content="410e6130f0c29a3cf9162f3254a68fba">
+<title>Ob-havo — jonli prognoz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700;12..96,800&family=DM+Sans:wght@400;500;700&display=swap">
+<style>
+:root{
+  --sky1:#2f80ed;--sky2:#9bd1ff;--ink:#fff;--soft:rgba(255,255,255,.72);
+  --panel:rgba(255,255,255,.15);--line:rgba(255,255,255,.28);
+  --display:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;
+  --body:"DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  box-sizing:border-box;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--sky1)}
+body{margin:0;min-height:100vh;font-family:var(--body);color:var(--ink);
+  background:linear-gradient(170deg,var(--sky1),var(--sky2));background-attachment:fixed;
+  transition:background .8s;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+main{position:relative;z-index:1;max-width:1040px;margin:0 auto;padding:20px 16px 48px}
+:focus-visible{outline:3px solid #fff;outline-offset:2px}
+button{font:inherit;color:inherit;cursor:pointer}
+
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.search{position:relative;flex:1 1 260px}
+.search input{width:100%;padding:14px 18px;border-radius:14px;border:1px solid var(--line);
+  background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  color:var(--ink);font:500 1rem var(--body)}
+.search input::placeholder{color:var(--soft)}
+.list{position:absolute;left:0;right:0;top:calc(100% + 6px);background:rgba(20,28,48,.94);border-radius:14px;
+  overflow:hidden;z-index:5;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+.list button{display:block;width:100%;text-align:left;padding:12px 16px;background:none;border:0;border-bottom:1px solid rgba(255,255,255,.08)}
+.list button:hover,.list button:focus-visible{background:rgba(255,255,255,.12)}
+.list small{color:var(--soft)}
+.btn{padding:13px 16px;border-radius:14px;border:1px solid var(--line);background:var(--panel);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);font-weight:700}
+.btn:hover{background:rgba(255,255,255,.26)}
+.seg{display:flex;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+.seg button{border:0;background:var(--panel);padding:13px 16px;font-weight:700}
+.seg button[aria-pressed=true]{background:#fff;color:#16324f}
+
+.chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.chips .lbl{color:var(--soft);font-size:.88rem;margin-right:4px}
+.chip{padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--panel);font-weight:500;font-size:.92rem}
+.chip:hover{background:rgba(255,255,255,.26)}
+.chip[aria-pressed=true]{background:#fff;color:#16324f;border-color:#fff;font-weight:700}
+
+.hero{padding:44px 4px 28px}
+.place{font:700 clamp(1.4rem,4vw,2rem)/1.1 var(--display);margin:0}
+.when{color:var(--soft);margin:6px 0 0}
+.temp{font:800 clamp(6rem,24vw,12.5rem)/.9 var(--display);letter-spacing:-.04em;margin:18px 0 6px;display:flex;align-items:flex-start;gap:6px}
+.temp .ico{font-size:.34em;line-height:1;margin-top:.12em}
+.desc{font:700 clamp(1.3rem,3.5vw,1.9rem) var(--display);margin:0}
+.hl{color:var(--soft);margin:8px 0 0;font-size:1.05rem}
+
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);margin-top:16px}
+.panel h2{font:700 1.05rem var(--display);margin:0 0 12px}
+.hours{overflow-x:auto;scrollbar-width:thin;padding-bottom:6px}
+.hours svg{display:block;min-width:1500px}
+.hours text{fill:#fff;font-family:var(--body)}
+
+.days{display:grid;gap:2px}
+.day{display:grid;grid-template-columns:96px 36px 1fr;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.14)}
+.day:last-child{border:0}
+.day .n{font-weight:700}
+.day .pp{display:block;font-size:.78rem;color:#bfe3ff}
+.range{display:grid;grid-template-columns:44px 1fr 44px;gap:10px;align-items:center;font-variant-numeric:tabular-nums}
+.range .lo{text-align:right;color:var(--soft)}
+.track{position:relative;height:8px;border-radius:8px;background:rgba(255,255,255,.2)}
+.track i{position:absolute;top:0;bottom:0;border-radius:8px;background:linear-gradient(90deg,#8fd3ff,#ffd166,#ff7b54)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.stat{background:rgba(255,255,255,.1);border-radius:16px;padding:14px}
+.stat span{display:block;color:var(--soft);font-size:.88rem;margin-bottom:6px}
+.stat b{font:700 1.5rem var(--display)}
+.stat em{display:block;font-style:normal;color:var(--soft);font-size:.85rem;margin-top:2px}
+.arrow{display:inline-block;transition:transform .5s}
+
+.msg{padding:60px 8px;text-align:center;font-size:1.1rem}
+.skeleton{animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.45}}
+footer{margin-top:28px;color:var(--soft);font-size:.85rem;text-align:center}
+footer a{color:inherit}
+@media (max-width:560px){.day{grid-template-columns:84px 30px 1fr}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<canvas id="fx" aria-hidden="true"></canvas>
+<main>
+  <div class="bar">
+    <div class="search">
+      <input id="q" type="search" placeholder="Shahar qidiring: Toshkent, Samarqand, London…" autocomplete="off" aria-label="Shahar qidirish">
+      <div id="list" class="list" hidden></div>
+    </div>
+    <button class="btn" id="geo" type="button">Mening joylashuvim</button>
+    <div class="seg" role="group" aria-label="Harorat birligi">
+      <button id="uc" type="button" aria-pressed="true">°C</button>
+      <button id="uf" type="button" aria-pressed="false">°F</button>
+    </div>
+  </div>
+  <div class="chips" id="chips" role="group" aria-label="Fargʻona viloyati hududlari"></div>
+  <div id="app"><div class="msg skeleton">Ob-havo yuklanmoqda…</div></div>
+  <footer>Ma’lumot: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> · har safar ochilganda yangilanadi</footer>
+</main>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const app=$('#app'),q=$('#q'),list=$('#list');
+const DAYS=['Yakshanba','Dushanba','Seshanba','Chorshanba','Payshanba','Juma','Shanba'];
+const MONTHS=['yanvar','fevral','mart','aprel','may','iyun','iyul','avgust','sentabr','oktabr','noyabr','dekabr'];
+const DEFAULT={name:'Toshkent',country:'Oʻzbekiston',lat:41.2995,lon:69.2401};
+let unit='c',place=DEFAULT,data=null;
+try{unit=localStorage.getItem('unit')||'c';const p=JSON.parse(localStorage.getItem('place')||'null');if(p&&p.lat!=null)place=p;}catch(e){}
+
+const WMO={0:['Ochiq osmon','☀️','🌙','clear'],1:['Asosan ochiq','🌤️','🌙','clear'],2:['Qisman bulutli','⛅','☁️','cloud'],3:['Bulutli','☁️','☁️','cloud'],
+45:['Tumanli','🌫️','🌫️','fog'],48:['Qirovli tuman','🌫️','🌫️','fog'],51:['Mayda yomgʻir','🌦️','🌧️','rain'],53:['Mayda yomgʻir','🌦️','🌧️','rain'],55:['Mayda yomgʻir','🌦️','🌧️','rain'],
+56:['Muzlovchi yomgʻir','🌧️','🌧️','rain'],57:['Muzlovchi yomgʻir','🌧️','🌧️','rain'],61:['Yengil yomgʻir','🌦️','🌧️','rain'],63:['Yomgʻir','🌧️','🌧️','rain'],65:['Kuchli yomgʻir','🌧️','🌧️','rain'],
+66:['Muzlovchi yomgʻir','🌧️','🌧️','rain'],67:['Muzlovchi yomgʻir','🌧️','🌧️','rain'],71:['Yengil qor','🌨️','🌨️','snow'],73:['Qor','❄️','❄️','snow'],75:['Kuchli qor','❄️','❄️','snow'],
+77:['Qor donalari','🌨️','🌨️','snow'],80:['Jala','🌦️','🌧️','rain'],81:['Jala','🌧️','🌧️','rain'],82:['Kuchli jala','⛈️','⛈️','rain'],85:['Qor yogʻishi','🌨️','🌨️','snow'],86:['Kuchli qor','❄️','❄️','snow'],
+95:['Momaqaldiroq','⛈️','⛈️','storm'],96:['Doʻl bilan momaqaldiroq','⛈️','⛈️','storm'],99:['Doʻl bilan momaqaldiroq','⛈️','⛈️','storm']};
+const wm=(c,day)=>{const w=WMO[c]||['Maʼlumot yoʻq','🌡️','🌡️','cloud'];return{t:w[0],i:day?w[1]:w[2],k:w[3]}};
+const SKY={
+ 'clear-1':['#1c6fe0','#8fd0ff'],'clear-0':['#070b24','#2a2f78'],'cloud-1':['#5f7894','#b4c3d4'],'cloud-0':['#141a2e','#3b455e'],
+ 'rain-1':['#2f4358','#7390a8'],'rain-0':['#0f1826','#34475c'],'snow-1':['#8ba3bd','#e6eef7'],'snow-0':['#26334a','#6f84a0'],
+ 'storm-1':['#251f40','#58497f'],'storm-0':['#0d0a1c','#35295a'],'fog-1':['#8a949c','#cdd2d6'],'fog-0':['#1c2229','#4b565e']};
+
+const T=t=>Math.round(unit==='c'?t:t*9/5+32)+'°';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const hm=s=>s.split('T')[1];
+
+async function load(p){
+  place=p;
+  markChips();
+  try{localStorage.setItem('place',JSON.stringify(p));}catch(e){}
+  app.innerHTML='<div class="msg skeleton">Ob-havo yuklanmoqda…</div>';
+  const url='https://api.open-meteo.com/v1/forecast?latitude='+p.lat+'&longitude='+p.lon+
+   '&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,pressure_msl,wind_speed_10m,wind_direction_10m'+
+   '&hourly=temperature_2m,weather_code,precipitation_probability,is_day'+
+   '&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_probability_max'+
+   '&timezone=auto&forecast_days=7&wind_speed_unit=kmh';
+  try{
+    const r=await fetch(url);
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    data=await r.json();
+    render();
+  }catch(e){
+    app.innerHTML='<div class="msg">Ob-havo maʼlumotini olib boʻlmadi. Internetni tekshiring.<br><br><button class="btn" id="retry" type="button">Qayta urinish</button></div>';
+    $('#retry').onclick=()=>load(place);
+  }
+}
+
+function curve(h){
+  const n=h.t.length,step=62,W=n*step+40,H=190,top=44,bot=H-58;
+  const mn=Math.min(...h.v),mx=Math.max(...h.v),rg=Math.max(mx-mn,1);
+  const pts=h.v.map((v,i)=>[24+i*step+step/2,top+(1-(v-mn)/rg)*(bot-top)]);
+  let d='M'+pts[0][0]+','+pts[0][1];
+  for(let i=1;i<n;i++){const[x0,y0]=pts[i-1],[x1,y1]=pts[i],mx2=(x0+x1)/2;d+=' C'+mx2+','+y0+' '+mx2+','+y1+' '+x1+','+y1;}
+  let s='<svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" role="img" aria-label="24 soatlik harorat grafigi"><path d="'+d+' L'+pts[n-1][0]+','+(H-40)+' L'+pts[0][0]+','+(H-40)+'Z" fill="rgba(255,255,255,.12)"/><path d="'+d+'" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>';
+  pts.forEach((p,i)=>{
+    s+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="4" fill="#fff"/><text x="'+p[0]+'" y="'+(p[1]-12)+'" text-anchor="middle" font-size="15" font-weight="700">'+T(h.v[i])+'</text>';
+    s+='<text x="'+p[0]+'" y="'+(H-20)+'" text-anchor="middle" font-size="18">'+h.i[i]+'</text><text x="'+p[0]+'" y="'+(H-2)+'" text-anchor="middle" font-size="13" opacity=".8">'+(i===0?'Hozir':hm(h.t[i]))+'</text>';
+    if(h.p[i]>=30)s+='<text x="'+p[0]+'" y="'+(H-40)+'" text-anchor="middle" font-size="11" fill="#bfe3ff" style="fill:#bfe3ff">'+h.p[i]+'%</text>';
+  });
+  return s+'</svg>';
+}
+
+function render(){
+  const c=data.current,d=data.daily,hh=data.hourly;
+  const day=c.is_day===1,w=wm(c.weather_code,day);
+  const cols=SKY[w.k+'-'+(day?1:0)];
+  document.documentElement.style.setProperty('--sky1',cols[0]);
+  document.documentElement.style.setProperty('--sky2',cols[1]);
+  document.documentElement.style.background=cols[0];
+  fx.set(w.k,!day);
+
+  let start=hh.time.findIndex(t=>t>=c.time.slice(0,13)+':00');if(start<0)start=0;
+  const hv={t:[],v:[],i:[],p:[]};
+  for(let i=start;i<Math.min(start+24,hh.time.length);i++){
+    hv.t.push(hh.time[i]);hv.v.push(hh.temperature_2m[i]);
+    hv.i.push(wm(hh.weather_code[i],hh.is_day[i]===1).i);hv.p.push(hh.precipitation_probability[i]||0);
+  }
+  const dt=new Date(c.time),now=dt.getDate()+' '+MONTHS[dt.getMonth()]+', '+DAYS[dt.getDay()]+', '+hm(c.time);
+  const wmin=Math.min(...d.temperature_2m_min),wmax=Math.max(...d.temperature_2m_max),wr=Math.max(wmax-wmin,1);
+  const rows=d.time.map((s,i)=>{
+    const[y,m,dd]=s.split('-').map(Number),nm=i===0?'Bugun':DAYS[new Date(y,m-1,dd).getDay()];
+    const l=(d.temperature_2m_min[i]-wmin)/wr*100,r=(d.temperature_2m_max[i]-wmin)/wr*100;
+    const pp=d.precipitation_probability_max[i];
+    return '<div class="day"><div class="n">'+nm+(pp>=20?'<span class="pp">💧 '+pp+'%</span>':'')+'</div><div style="font-size:1.5rem" title="'+esc(wm(d.weather_code[i],true).t)+'">'+wm(d.weather_code[i],true).i+'</div>'+
+      '<div class="range"><span class="lo">'+T(d.temperature_2m_min[i])+'</span><div class="track"><i style="left:'+l+'%;right:'+(100-r)+'%"></i></div><span>'+T(d.temperature_2m_max[i])+'</span></div></div>';
+  }).join('');
+  const uv=d.uv_index_max[0],uvl=uv<3?'Past':uv<6?'Oʻrta':uv<8?'Yuqori':'Juda yuqori';
+  const comp=['Sh','SSh','ShQ','QSh','Q','QJ','JQ','JJ','J','JG','JGʻ','GʻJ','Gʻ','GʻSh','ShGʻ','ShSh'];
+  const dir=comp[Math.round(c.wind_direction_10m/22.5)%16]||'';
+  const stats=[
+    ['Seziladi',T(c.apparent_temperature),''],
+    ['Namlik',Math.round(c.relative_humidity_2m)+'%',''],
+    ['Shamol',Math.round(c.wind_speed_10m)+' km/s','<span class="arrow" style="transform:rotate('+(c.wind_direction_10m+180)+'deg)">↑</span> '+dir],
+    ['Bosim',Math.round(c.pressure_msl)+' hPa',''],
+    ['UV indeks',Math.round(uv),uvl],
+    ['Yogʻin ehtimoli',(d.precipitation_probability_max[0]||0)+'%','bugun'],
+    ['Quyosh chiqishi',hm(d.sunrise[0]),''],
+    ['Quyosh botishi',hm(d.sunset[0]),'']
+  ].map(s=>'<div class="stat"><span>'+s[0]+'</span><b>'+s[1]+'</b>'+(s[2]?'<em>'+s[2]+'</em>':'')+'</div>').join('');
+
+  app.innerHTML=
+   '<section class="hero"><h1 class="place">'+esc(place.name)+(place.country?', '+esc(place.country):'')+'</h1><p class="when">'+now+'</p>'+
+   '<div class="temp"><span>'+T(c.temperature_2m)+'</span><span class="ico" aria-hidden="true">'+w.i+'</span></div>'+
+   '<p class="desc">'+w.t+'</p><p class="hl">Eng yuqori '+T(d.temperature_2m_max[0])+' · eng past '+T(d.temperature_2m_min[0])+'</p></section>'+
+   '<section class="panel"><h2>Keyingi 24 soat</h2><div class="hours">'+curve(hv)+'</div></section>'+
+   '<section class="panel"><h2>7 kunlik prognoz</h2><div class="days">'+rows+'</div></section>'+
+   '<section class="panel"><h2>Batafsil</h2><div class="grid">'+stats+'</div></section>';
+  document.title=T(c.temperature_2m)+' '+place.name+' — ob-havo';
+}
+
+/* ---------- Qidiruv ---------- */
+let timer;
+q.addEventListener('input',()=>{
+  clearTimeout(timer);
+  const v=q.value.trim();
+  if(v.length<2){list.hidden=true;return;}
+  timer=setTimeout(async()=>{
+    try{
+      const r=await fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(v)+'&count=6&language=en');
+      const j=await r.json();
+      if(!j.results){list.innerHTML='<button type="button" disabled>Topilmadi — boshqa nom yozing</button>';list.hidden=false;return;}
+      list.innerHTML=j.results.map((x,i)=>'<button type="button" data-i="'+i+'">'+esc(x.name)+' <small>'+esc([x.admin1,x.country].filter(Boolean).join(', '))+'</small></button>').join('');
+      list.hidden=false;
+      list._r=j.results;
+    }catch(e){list.innerHTML='<button type="button" disabled>Qidiruvda xatolik</button>';list.hidden=false;}
+  },300);
+});
+list.addEventListener('click',e=>{
+  const b=e.target.closest('button[data-i]');if(!b)return;
+  const x=list._r[+b.dataset.i];
+  list.hidden=true;q.value='';
+  load({name:x.name,country:x.country||'',lat:x.latitude,lon:x.longitude});
+});
+q.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){const b=list.querySelector('button[data-i]');if(b)b.click();}
+  if(e.key==='Escape')list.hidden=true;
+});
+document.addEventListener('click',e=>{if(!e.target.closest('.search'))list.hidden=true;});
+
+$('#geo').onclick=()=>{
+  if(!navigator.geolocation){alert('Brauzeringiz joylashuvni qoʻllab-quvvatlamaydi.');return;}
+  navigator.geolocation.getCurrentPosition(
+    p=>load({name:'Joriy joylashuv',country:'',lat:+p.coords.latitude.toFixed(4),lon:+p.coords.longitude.toFixed(4)}),
+    ()=>alert('Joylashuvga ruxsat berilmadi. Shahar nomini qidiring.'),{timeout:10000});
+};
+function setUnit(u){
+  unit=u;try{localStorage.setItem('unit',u);}catch(e){}
+  $('#uc').setAttribute('aria-pressed',u==='c');$('#uf').setAttribute('aria-pressed',u==='f');
+  if(data)render();
+}
+$('#uc').onclick=()=>setUnit('c');$('#uf').onclick=()=>setUnit('f');
+
+/* ---------- Osmon effektlari ---------- */
+const fx=(function(){
+  const cv=$('#fx'),g=cv.getContext('2d'),still=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let kind='clear',night=false,P=[],W=0,H=0,raf=0;
+  function size(){const r=devicePixelRatio||1;W=innerWidth;H=innerHeight;cv.width=W*r;cv.height=H*r;g.setTransform(r,0,0,r,0,0);}
+  function build(){
+    const n=kind==='rain'||kind==='storm'?140:kind==='snow'?110:(night&&(kind==='clear'||kind==='cloud'))?90:0;
+    P=Array.from({length:n},()=>({x:Math.random()*W,y:Math.random()*H,s:Math.random(),p:Math.random()*6.28}));
+  }
+  function frame(t){
+    g.clearRect(0,0,W,H);
+    for(const p of P){
+      if(kind==='rain'||kind==='storm'){
+        p.y+=10+p.s*12;p.x-=2;if(p.y>H){p.y=-20;p.x=Math.random()*W;}
+        g.strokeStyle='rgba(210,230,255,'+(.25+p.s*.3)+')';g.lineWidth=1.2;g.beginPath();g.moveTo(p.x,p.y);g.lineTo(p.x-2,p.y+12+p.s*8);g.stroke();
+      }else if(kind==='snow'){
+        p.y+=.6+p.s*1.4;p.x+=Math.sin(t/900+p.p)*.5;if(p.y>H){p.y=-6;p.x=Math.random()*W;}
+        g.fillStyle='rgba(255,255,255,'+(.5+p.s*.4)+')';g.beginPath();g.arc(p.x,p.y,1.2+p.s*2.4,0,6.28);g.fill();
+      }else{
+        g.fillStyle='rgba(255,255,255,'+(.3+.6*Math.abs(Math.sin(t/1400+p.p)))+')';g.beginPath();g.arc(p.x,p.y*.8,.6+p.s*1.2,0,6.28);g.fill();
+      }
+    }
+    if(kind==='storm'&&!still&&Math.sin(t/2600)>.985){g.fillStyle='rgba(255,255,255,.22)';g.fillRect(0,0,W,H);}
+    if(!still)raf=requestAnimationFrame(frame);
+  }
+  addEventListener('resize',()=>{size();build();});
+  size();
+  return{set(k,n){kind=k;night=n;cancelAnimationFrame(raf);build();raf=requestAnimationFrame(frame);}};
+})();
+
+/* ---------- Fargʻona viloyati: 12 ta hudud ---------- */
+const REGION=[
+ ['Fargʻona',40.3842,71.7843],['Margʻilon',40.4711,71.7247],['Qoʻqon',40.5286,70.9425],['Quvasoy',40.3000,71.9833],
+ ['Quva',40.5225,72.0778],['Rishton',40.3569,71.2828],['Oltiariq',40.3919,71.4747],['Beshariq',40.4333,70.6000],
+ ['Bagʻdod',40.4430,71.2020],['Buvayda',40.6139,71.6989],['Dangʻara',40.5900,70.9300],['Soʻx',39.9833,71.1333]
+];
+const chips=$('#chips');
+chips.innerHTML='<span class="lbl">Fargʻona viloyati:</span>'+REGION.map((r,i)=>'<button class="chip" type="button" data-r="'+i+'" aria-pressed="false">'+r[0]+'</button>').join('');
+chips.addEventListener('click',e=>{
+  const b=e.target.closest('.chip');if(!b)return;
+  const r=REGION[+b.dataset.r];
+  load({name:r[0],country:'Fargʻona viloyati',lat:r[1],lon:r[2]});
+});
+function markChips(){
+  chips.querySelectorAll('.chip').forEach(b=>{
+    const r=REGION[+b.dataset.r];
+    b.setAttribute('aria-pressed',String(place.lat===r[1]&&place.lon===r[2]));
+  });
+}
+
+load(place);
+markChips();
+})();
+</script>
+</body>
+</html>

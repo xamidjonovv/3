@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Do’kon savatchasi</title>
+<style>
+:root{--bg:#f3f6fb;--card:#fff;--text:#14202e;--muted:#5d6b7c;--brand:#1769b8;--brand-d:#0f5192;--badge:#e5322d;--line:#e3e9f1;--img:#eceef2}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1620;--card:#18222f;--text:#e8eef6;--muted:#9aa8b9;--brand:#4a9be8;--brand-d:#3a86d0;--line:#263446;--img:#222d3b}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.45}
+header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;max-width:960px;margin:0 auto}
+h1{font-size:1.25rem;margin:0}
+.cart-btn{position:relative;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer;color:var(--brand)}
+.badge{position:absolute;top:-8px;right:-8px;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:var(--badge);color:#fff;font-size:.8rem;font-weight:700;display:flex;align-items:center;justify-content:center;transition:transform .2s}
+.badge.pop{transform:scale(1.35)}
+main{max-width:960px;margin:0 auto;padding:0 20px 40px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+@media(max-width:720px){main{grid-template-columns:1fr}}
+.products{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;align-content:start}
+.product{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.pic{background:var(--img);border-radius:10px;height:110px;display:flex;align-items:center;justify-content:center;font-size:3rem}
+.product h3{font-size:.95rem;margin:4px 0 0}
+.price{color:var(--muted)}
+.add{margin-top:auto;background:var(--brand);color:#fff;border:0;border-radius:10px;padding:10px;font-size:.95rem;font-weight:600;cursor:pointer}
+.add:hover{background:var(--brand-d)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;align-self:start}
+.panel h2{font-size:1.05rem;margin:0 0 10px}
+.row{display:grid;grid-template-columns:1fr auto;gap:6px 10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.row .name{font-weight:600}
+.row .sub{color:var(--muted);font-size:.85rem}
+.qty{display:flex;align-items:center;gap:6px}
+.qty button{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--text);font-size:1rem;cursor:pointer}
+.del{background:none;border:0;color:var(--badge);cursor:pointer;font-size:.85rem;padding:0}
+.empty{color:var(--muted);padding:12px 0}
+.total{display:flex;justify-content:space-between;font-weight:700;font-size:1.1rem;padding-top:14px}
+.clear{margin-top:12px;width:100%;background:transparent;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px;cursor:pointer}
+</style>
+</head>
+<body>
+<header>
+  <h1>Elektronika do’koni</h1>
+  <button class="cart-btn" aria-label="Savatcha">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.6 12.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"/></svg>
+    <span class="badge" id="badge">0</span>
+  </button>
+</header>
+
+<main>
+  <section class="products" id="products"></section>
+  <aside class="panel" id="panel">
+    <h2>Savatcha</h2>
+    <div id="items"></div>
+    <div class="total"><span>Jami:</span><span id="total">$0.00</span></div>
+    <button class="clear" id="clear">Savatchani tozalash</button>
+  </aside>
+</main>
+
+<script>
+const products = [
+  {name:"Sony WH-1000XM5 Headphones", price:349, icon:"🎧"},
+  {name:"USB-C Cable", price:12.5, icon:"🔌"},
+  {name:"Wireless Mouse", price:29.9, icon:"🖱️"},
+  {name:"Mechanical Keyboard", price:89, icon:"⌨️"}
+];
+
+const cart = [];
+
+const money = n => "$" + n.toFixed(2);
+
+function addToCart(name, price, quantity = 1) {
+  const existing = cart.find(i => i.name === name);
+  if (existing) existing.quantity += quantity;
+  else cart.push({ name, price, quantity });
+  render(true);
+}
+
+function changeQty(name, delta) {
+  const item = cart.find(i => i.name === name);
+  if (!item) return;
+  item.quantity += delta;
+  if (item.quantity <= 0) removeItem(name); else render();
+}
+
+function removeItem(name) {
+  const i = cart.findIndex(x => x.name === name);
+  if (i > -1) cart.splice(i, 1);
+  render();
+}
+
+const getTotalCount = () => cart.reduce((s, i) => s + i.quantity, 0);
+const getTotalPrice = () => cart.reduce((s, i) => s + i.price * i.quantity, 0);
+
+function render(pop) {
+  const box = document.getElementById("items");
+  box.innerHTML = "";
+  if (!cart.length) {
+    box.innerHTML = '<div class="empty">Savatcha bo’sh. Mahsulotni “Savatchaga qo’shish” tugmasi bilan qo’shing.</div>';
+  }
+  cart.forEach(item => {
+    const row = document.createElement("div");
+    row.className = "row";
+    row.innerHTML = `
+      <div><div class="name"></div><div class="sub">${money(item.price)} × ${item.quantity} = ${money(item.price * item.quantity)}</div></div>
+      <div class="qty">
+        <button aria-label="Kamaytirish">−</button><span>${item.quantity}</span><button aria-label="Ko’paytirish">+</button>
+      </div>
+      <button class="del">O’chirish</button>`;
+    row.querySelector(".name").textContent = item.name;
+    const [minus, plus] = row.querySelectorAll(".qty button");
+    minus.onclick = () => changeQty(item.name, -1);
+    plus.onclick = () => changeQty(item.name, 1);
+    row.querySelector(".del").onclick = () => removeItem(item.name);
+    box.appendChild(row);
+  });
+  const badge = document.getElementById("badge");
+  badge.textContent = getTotalCount();
+  document.getElementById("total").textContent = money(getTotalPrice());
+  if (pop) { badge.classList.add("pop"); setTimeout(() => badge.classList.remove("pop"), 200); }
+}
+
+const list = document.getElementById("products");
+products.forEach(p => {
+  const el = document.createElement("div");
+  el.className = "product";
+  el.innerHTML = `<div class="pic">${p.icon}</div><h3></h3><div class="price">${money(p.price)}</div><button class="add">Savatchaga qo’shish</button>`;
+  el.querySelector("h3").textContent = p.name;
+  el.querySelector(".add").onclick = () => addToCart(p.name, p.price);
+  list.appendChild(el);
+});
+
+document.getElementById("clear").onclick = () => { cart.length = 0; render(); };
+render();
+</script>
+</body>
+</html>
